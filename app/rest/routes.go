@@ -18,3 +18,10 @@ func (r *Routes) registerRoutes() {
 		return c.SendString("pong")
 	})
 }
+
+func (r *Routes) AuthRoutes() {
+	authGroup := app.Group("/auth")
+
+	authGroup.Post("/login", r.controller.AuthController.Login)
+	authGroup.Post("/register", r.controller.AuthController.Register)
+}
