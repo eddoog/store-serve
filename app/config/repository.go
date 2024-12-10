@@ -1,7 +1,16 @@
 package config
 
-type Repository struct{}
+import (
+	"github.com/eddoog/store-serve/repository/auth"
+	"gorm.io/gorm"
+)
 
-func InitRepository() {
+type Repository struct {
+	AuthRepository auth.IAuthRepository
+}
 
+func InitRepository(db *gorm.DB) *Repository {
+	return &Repository{
+		AuthRepository: auth.InitAuthRepository(db),
+	}
 }

@@ -1,9 +1,23 @@
 package auth
 
-type IAuthRepository interface{}
+import (
+	"github.com/eddoog/store-serve/domains/entities"
+	"gorm.io/gorm"
+)
 
-type AuthRepository struct{}
+type IAuthRepository interface {
+	CheckUserExist(string) (bool, error)
+	Register(params entities.UserRegister) error
+}
 
-func InitAuthRepository() IAuthRepository {
-	return &AuthRepository{}
+type AuthRepository struct {
+	db *gorm.DB
+}
+
+func InitAuthRepository(
+	db *gorm.DB,
+) IAuthRepository {
+	return &AuthRepository{
+		db: db,
+	}
 }

@@ -3,13 +3,17 @@ package app
 import (
 	"github.com/eddoog/store-serve/app/config"
 	"github.com/eddoog/store-serve/app/rest"
-	"github.com/eddoog/store-serve/repository"
 )
 
 func StartApp() {
 	initEnvironment()
+	db = initDatabase()
 
-	repository := repository.InitRepository()
+	models := initModels()
+
+	migrateModels(db, models)
+
+	repository := config.InitRepository(db)
 	service := config.InitService(repository)
 
 	rest.InitRest(service)

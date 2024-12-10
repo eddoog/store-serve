@@ -1,10 +1,13 @@
 package auth
 
-import "github.com/eddoog/store-serve/repository/auth"
+import (
+	"github.com/eddoog/store-serve/domains/entities"
+	"github.com/eddoog/store-serve/repository/auth"
+)
 
 type IAuthService interface {
 	Login()
-	Register()
+	Register(params entities.UserRegister) error
 }
 
 type AuthService struct {

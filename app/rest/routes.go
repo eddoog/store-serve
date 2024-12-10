@@ -17,6 +17,8 @@ func (r *Routes) registerRoutes() {
 	app.Get("/ping", func(c *fiber.Ctx) error {
 		return c.SendString("pong")
 	})
+
+	r.AuthRoutes()
 }
 
 func (r *Routes) AuthRoutes() {
