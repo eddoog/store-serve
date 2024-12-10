@@ -8,7 +8,45 @@ import (
 )
 
 func (a *AuthController) Login(ctx *fiber.Ctx) error {
-	return nil
+	var userLogin entities.UserLogin
+
+	if err := ctx.BodyParser(&userLogin); err != nil {
+		logrus.Error(err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid request body",
+		})
+	}
+
+	if err := a.Validator.Struct(&userLogin); err != nil {
+		validationErrors := domains.CustomValidationError(err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Validation failed",
+			"errors":  validationErrors,
+		})
+	}
+
+	user, err := a.AuthService.Login(userLogin)
+
+	if err != nil {
+		logrus.Error(err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	token, err := GenerateJWT(user.ID, user.Email)
+
+	if err != nil {
+		logrus.Error(err)
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to generate token",
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"token":   token,
+		"message": "Login successful",
+	})
 }
 
 func (a *AuthController) Register(ctx *fiber.Ctx) error {

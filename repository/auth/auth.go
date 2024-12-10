@@ -26,3 +26,11 @@ func (a *AuthRepository) Register(params entities.UserRegister) error {
 
 	return a.db.Create(&user).Error
 }
+
+func (a *AuthRepository) GetUserByEmail(email string) (models.User, error) {
+	var user models.User
+
+	err := a.db.Where("email = ?", email).First(&user).Error
+
+	return user, err
+}
