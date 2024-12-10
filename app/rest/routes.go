@@ -2,6 +2,7 @@ package rest
 
 import (
 	"github.com/eddoog/store-serve/controller"
+	"github.com/eddoog/store-serve/middleware"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -19,6 +20,7 @@ func (r *Routes) registerRoutes() {
 	})
 
 	r.AuthRoutes()
+	r.UserRoutes()
 }
 
 func (r *Routes) AuthRoutes() {
@@ -26,4 +28,10 @@ func (r *Routes) AuthRoutes() {
 
 	authGroup.Post("/login", r.controller.AuthController.Login)
 	authGroup.Post("/register", r.controller.AuthController.Register)
+}
+
+func (r *Routes) UserRoutes() {
+	userGroup := app.Group("/user")
+
+	userGroup.Get("/me", middleware.JWTMiddleware, r.controller.UserController.Profile)
 }

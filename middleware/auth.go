@@ -7,6 +7,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+type UserClaims struct {
+	UserID uint    `json:"user_id"`
+	Email  string  `json:"email"`
+	Exp    float64 `json:"exp"`
+}
+
 func JWTMiddleware(c *fiber.Ctx) error {
 	authHeader := c.Get("Authorization")
 	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
@@ -24,6 +30,12 @@ func JWTMiddleware(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Locals("user", claims)
+	userClaims := UserClaims{
+		UserID: uint(claims["user_id"].(float64)),
+		Email:  claims["email"].(string),
+		Exp:    claims["exp"].(float64),
+	}
+
+	c.Locals("user", userClaims)
 	return c.Next()
 }
