@@ -60,4 +60,5 @@ func (r *Routes) TransactionRoutes() {
 	transactionGroup.Get("/", r.controller.TransactionController.GetTransactions)
 	transactionGroup.Post("/checkout", r.controller.TransactionController.Checkout)
 	transactionGroup.Delete("/:id/cancel", r.controller.TransactionController.CancelTransaction)
+	transactionGroup.Post("/:id/pay", r.controller.TransactionController.HandlePayment)
 }

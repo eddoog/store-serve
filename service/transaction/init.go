@@ -9,6 +9,7 @@ type ITransactionService interface {
 	GetUserTransactions(userID uint) ([]models.Transaction, error)
 	Checkout(userID uint) error
 	CancelTransaction(txID uint, userID uint) error
+	ProcessPayment(txID uint, userID uint) error
 }
 
 type TransactionService struct {

@@ -75,3 +75,35 @@ func (t *TransactionController) CancelTransaction(ctx *fiber.Ctx) error {
 		"message": "Transaction canceled successfully",
 	})
 }
+
+func (t *TransactionController) HandlePayment(ctx *fiber.Ctx) error {
+	// Extract user from context
+	user := ctx.Locals("user").(middleware.UserClaims)
+	if user == (middleware.UserClaims{}) {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Unauthorized",
+		})
+	}
+
+	// Get transaction ID from URL parameters
+	txIDStr := ctx.Params("id")
+	txID, err := strconv.Atoi(txIDStr)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid transaction ID",
+		})
+	}
+
+	// Call service to process payment
+	err = t.TransactionService.ProcessPayment(uint(txID), user.UserID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Payment processing failed",
+			"error":   err.Error(),
+		})
+	}
+
+	return ctx.JSON(fiber.Map{
+		"message": "Payment successful",
+	})
+}

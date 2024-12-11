@@ -9,6 +9,7 @@ type ITransactionController interface {
 	GetTransactions(ctx *fiber.Ctx) error
 	Checkout(ctx *fiber.Ctx) error
 	CancelTransaction(ctx *fiber.Ctx) error
+	HandlePayment(ctx *fiber.Ctx) error
 }
 
 type TransactionController struct {

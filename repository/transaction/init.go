@@ -9,6 +9,8 @@ type ITransactionRepository interface {
 	GetUserTransactions(userID uint) ([]models.Transaction, error)
 	Checkout(userID uint) error
 	CancelTransaction(txID uint, userID uint) error
+	GetTransaction(txID uint) (*models.Transaction, error)
+	UpdateTransaction(transaction *models.Transaction) error
 }
 
 type TransactionRepository struct {

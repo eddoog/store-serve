@@ -200,3 +200,15 @@ func (r *TransactionRepository) CancelTransaction(txID uint, userID uint) error 
 
 	return nil
 }
+
+func (r *TransactionRepository) GetTransaction(txID uint) (*models.Transaction, error) {
+	var transaction models.Transaction
+	if err := r.db.First(&transaction, txID).Error; err != nil {
+		return nil, err
+	}
+	return &transaction, nil
+}
+
+func (r *TransactionRepository) UpdateTransaction(transaction *models.Transaction) error {
+	return r.db.Save(transaction).Error
+}
