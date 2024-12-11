@@ -22,6 +22,7 @@ func (r *Routes) registerRoutes() {
 	r.AuthRoutes()
 	r.UserRoutes()
 	r.ProductRoutes()
+	r.CartRoutes()
 }
 
 func (r *Routes) AuthRoutes() {
@@ -42,4 +43,12 @@ func (r *Routes) ProductRoutes() {
 
 	productGroup.Get("/", r.controller.ProductController.Index)
 	productGroup.Get("/:id", r.controller.ProductController.Show)
+}
+
+func (r *Routes) CartRoutes() {
+	cartGroup := app.Group("/cart").Use(middleware.JWTMiddleware)
+
+	cartGroup.Get("/", r.controller.CartController.ViewCart)
+	cartGroup.Post("/", r.controller.CartController.Store)
+	cartGroup.Delete("/:id", r.controller.CartController.RemoveCartItem)
 }

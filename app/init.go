@@ -86,5 +86,7 @@ func initModels() []interface{} {
 		&models.User{},
 		&models.ProductCategory{},
 		&models.Product{},
+		&models.Cart{},
+		&models.CartItem{},
 	}
 }
