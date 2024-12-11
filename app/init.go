@@ -84,5 +84,7 @@ func migrateModels(db *gorm.DB, models []interface{}) {
 func initModels() []interface{} {
 	return []interface{}{
 		&models.User{},
+		&models.ProductCategory{},
+		&models.Product{},
 	}
 }

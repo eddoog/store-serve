@@ -21,6 +21,7 @@ func (r *Routes) registerRoutes() {
 
 	r.AuthRoutes()
 	r.UserRoutes()
+	r.ProductRoutes()
 }
 
 func (r *Routes) AuthRoutes() {
@@ -34,4 +35,11 @@ func (r *Routes) UserRoutes() {
 	userGroup := app.Group("/user")
 
 	userGroup.Get("/me", middleware.JWTMiddleware, r.controller.UserController.Profile)
+}
+
+func (r *Routes) ProductRoutes() {
+	productGroup := app.Group("/products").Use(middleware.JWTMiddleware)
+
+	productGroup.Get("/", r.controller.ProductController.Index)
+	productGroup.Get("/:id", r.controller.ProductController.Show)
 }

@@ -34,7 +34,7 @@ VALUES
     (32, 'Gaming Chair', 'An ergonomic chair designed for gamers.', 1, 199.99, 20, NOW()),
     (33, 'Puzzle Book', 'A book filled with engaging puzzles and games.', 3, 7.99, 120, NOW()),
     (34, 'Fantasy Novel', 'An epic fantasy novel.', 3, 17.99, 70, NOW()),
-    (35, 'Blender', 'A powerful blender for smoothies and soups.', 4, 89.99, 25, NOW())
+    (35, 'Blender', 'A powerful blender for smoothies and soups.', 4, 89.99, 25, NOW()),
     (36, 'Camping Tent', 'A waterproof camping tent for 2 people.', 5, 99.99, 30, NOW()),
     (37, 'Trekking Pole', 'Durable trekking poles for hiking enthusiasts.', 5, 45.00, 35, NOW()),
     (38, 'Electric Kettle', 'A fast-boiling electric kettle.', 4, 29.99, 40, NOW()),
