@@ -42,20 +42,6 @@ func initDatabase() *gorm.DB {
 	return db
 }
 
-func tableExists(db *gorm.DB, tableName string) bool {
-	var exists bool
-	query := `SELECT EXISTS (
-		SELECT 1 
-		FROM information_schema.tables 
-		WHERE table_name = ?
-	)`
-	err := db.Raw(query, tableName).Scan(&exists).Error
-	if err != nil {
-		logrus.Fatalf("Error checking if table exists: %v", err)
-	}
-	return exists
-}
-
 func getTableName(db *gorm.DB, model interface{}) string {
 	stmt := &gorm.Statement{DB: db}
 	err := stmt.Parse(model)
@@ -67,17 +53,11 @@ func getTableName(db *gorm.DB, model interface{}) string {
 
 func migrateModels(db *gorm.DB, models []interface{}) {
 	for _, model := range models {
-		tableName := getTableName(db, model)
-		if tableExists(db, tableName) {
-			logrus.Printf("Table '%s' already exists. Skipping migration.", tableName)
-		} else {
-			logrus.Printf("Table '%s' does not exist. Running migration.", tableName)
-			err := db.AutoMigrate(model)
-			if err != nil {
-				logrus.Fatalf("Failed to migrate table '%s': %v", tableName, err)
-			}
-			logrus.Printf("Migration for table '%s' completed successfully.", tableName)
+		err := db.AutoMigrate(model)
+		if err != nil {
+			logrus.Fatalf("Failed to migrate table '%s': %v", getTableName(db, model), err)
 		}
+		logrus.Printf("Migration for table '%s' completed successfully.", getTableName(db, model))
 	}
 }
 
@@ -88,5 +68,7 @@ func initModels() []interface{} {
 		&models.Product{},
 		&models.Cart{},
 		&models.CartItem{},
+		&models.Transaction{},
+		&models.TransactionItem{},
 	}
 }

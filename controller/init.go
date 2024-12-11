@@ -5,21 +5,24 @@ import (
 	"github.com/eddoog/store-serve/controller/auth"
 	"github.com/eddoog/store-serve/controller/cart"
 	"github.com/eddoog/store-serve/controller/product"
+	"github.com/eddoog/store-serve/controller/transaction"
 	"github.com/eddoog/store-serve/controller/user"
 )
 
 type Controller struct {
-	AuthController    auth.IAuthController
-	UserController    user.IUserController
-	ProductController product.IProductController
-	CartController    cart.ICartController
+	AuthController        auth.IAuthController
+	UserController        user.IUserController
+	ProductController     product.IProductController
+	CartController        cart.ICartController
+	TransactionController transaction.ITransactionController
 }
 
 func InitController(service *config.Service) *Controller {
 	return &Controller{
-		AuthController:    auth.NewAuthController(service.AuthService),
-		UserController:    user.NewUserController(service.UserService),
-		ProductController: product.NewProductController(service.ProductService),
-		CartController:    cart.NewCartController(service.CartService),
+		AuthController:        auth.NewAuthController(service.AuthService),
+		UserController:        user.NewUserController(service.UserService),
+		ProductController:     product.NewProductController(service.ProductService),
+		CartController:        cart.NewCartController(service.CartService),
+		TransactionController: transaction.NewTransactionController(service.TransactionService),
 	}
 }
