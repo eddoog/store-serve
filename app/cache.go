@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"crypto/tls"
 	"net/url"
 	"os"
@@ -10,7 +9,6 @@ import (
 	"github.com/valkey-io/valkey-go"
 )
 
-var ctx = context.Background()
 var rdb valkey.Client
 
 func InitRedis() {
