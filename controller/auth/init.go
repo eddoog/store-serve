@@ -2,6 +2,7 @@ package auth
 
 import (
 	"github.com/eddoog/store-serve/service/auth"
+	"github.com/eddoog/store-serve/service/cache"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 )
@@ -12,8 +13,9 @@ type IAuthController interface {
 }
 
 type AuthController struct {
-	AuthService auth.IAuthService
-	Validator   *validator.Validate
+	AuthService  auth.IAuthService
+	Validator    *validator.Validate
+	CacheService *cache.CacheService
 }
 
 func NewAuthController(authService auth.IAuthService) IAuthController {

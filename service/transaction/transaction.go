@@ -4,14 +4,15 @@ import (
 	"fmt"
 
 	"github.com/eddoog/store-serve/domains/models"
+	"github.com/gofiber/fiber/v2"
 )
 
 func (t *TransactionService) GetUserTransactions(userID uint) ([]models.Transaction, error) {
 	return t.repository.GetUserTransactions(userID)
 }
 
-func (t *TransactionService) Checkout(userID uint) error {
-	err := t.repository.Checkout(userID)
+func (t *TransactionService) Checkout(ctx *fiber.Ctx, userID uint) error {
+	err := t.repository.Checkout(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -19,8 +20,8 @@ func (t *TransactionService) Checkout(userID uint) error {
 	return nil
 }
 
-func (t *TransactionService) CancelTransaction(txID uint, userID uint) error {
-	return t.repository.CancelTransaction(txID, userID)
+func (t *TransactionService) CancelTransaction(ctx *fiber.Ctx, txID uint, userID uint) error {
+	return t.repository.CancelTransaction(ctx, txID, userID)
 }
 
 func (t *TransactionService) ProcessPayment(txID uint, userID uint) error {

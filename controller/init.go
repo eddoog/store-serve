@@ -7,6 +7,7 @@ import (
 	"github.com/eddoog/store-serve/controller/product"
 	"github.com/eddoog/store-serve/controller/transaction"
 	"github.com/eddoog/store-serve/controller/user"
+	"github.com/eddoog/store-serve/service/cache"
 )
 
 type Controller struct {
@@ -17,11 +18,11 @@ type Controller struct {
 	TransactionController transaction.ITransactionController
 }
 
-func InitController(service *config.Service) *Controller {
+func InitController(service *config.Service, cacheService cache.ICacheService) *Controller {
 	return &Controller{
 		AuthController:        auth.NewAuthController(service.AuthService),
 		UserController:        user.NewUserController(service.UserService),
-		ProductController:     product.NewProductController(service.ProductService),
+		ProductController:     product.NewProductController(service.ProductService, cacheService),
 		CartController:        cart.NewCartController(service.CartService),
 		TransactionController: transaction.NewTransactionController(service.TransactionService),
 	}

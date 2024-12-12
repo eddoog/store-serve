@@ -15,8 +15,10 @@ func StartApp() {
 		migrateModels(db, models)
 	}
 
-	repository := config.InitRepository(db)
+	InitRedis()
+	cacheService := config.InitCacheService(rdb)
+	repository := config.InitRepository(db, cacheService)
 	service := config.InitService(repository)
 
-	rest.InitRest(service)
+	rest.InitRest(service, cacheService)
 }

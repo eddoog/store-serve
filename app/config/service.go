@@ -2,10 +2,12 @@ package config
 
 import (
 	"github.com/eddoog/store-serve/service/auth"
+	"github.com/eddoog/store-serve/service/cache"
 	"github.com/eddoog/store-serve/service/cart"
 	"github.com/eddoog/store-serve/service/product"
 	"github.com/eddoog/store-serve/service/transaction"
 	"github.com/eddoog/store-serve/service/user"
+	"github.com/valkey-io/valkey-go"
 )
 
 type Service struct {
@@ -26,4 +28,8 @@ func InitService(
 		CartService:        cart.InitCartService(repository.CartRepository),
 		TransactionService: transaction.InitTransactionService(repository.TransactionRepository),
 	}
+}
+
+func InitCacheService(rdb valkey.Client) cache.ICacheService {
+	return cache.NewCacheService(rdb)
 }

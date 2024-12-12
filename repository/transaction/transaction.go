@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/eddoog/store-serve/domains/models"
+	"github.com/gofiber/fiber/v2"
 )
 
 func (r *TransactionRepository) GetUserTransactions(userID uint) ([]models.Transaction, error) {
@@ -15,7 +16,7 @@ func (r *TransactionRepository) GetUserTransactions(userID uint) ([]models.Trans
 	return transactions, nil
 }
 
-func (r *TransactionRepository) Checkout(userID uint) error {
+func (r *TransactionRepository) Checkout(ctx *fiber.Ctx, userID uint) error {
 	tx := r.db.Begin()
 
 	defer func() {
@@ -107,6 +108,9 @@ func (r *TransactionRepository) Checkout(userID uint) error {
 			tx.Rollback()
 			return fmt.Errorf("failed to update product stock: %v", err)
 		}
+
+		// Invalidate cache
+		r.CacheService.Delete(ctx, fmt.Sprintf("product:%d", item.ProductID))
 	}
 
 	if err := tx.Where("cart_id = ?", cart.ID).Delete(&models.CartItem{}).Error; err != nil {
@@ -121,7 +125,7 @@ func (r *TransactionRepository) Checkout(userID uint) error {
 	return nil
 }
 
-func (r *TransactionRepository) CancelTransaction(txID uint, userID uint) error {
+func (r *TransactionRepository) CancelTransaction(ctx *fiber.Ctx, txID uint, userID uint) error {
 	tx := r.db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -178,6 +182,8 @@ func (r *TransactionRepository) CancelTransaction(txID uint, userID uint) error 
 			tx.Rollback()
 			return fmt.Errorf("failed to update product stock: %v", err)
 		}
+
+		r.CacheService.Delete(ctx, fmt.Sprintf("product:%d", item.ProductID))
 	}
 
 	// Soft delete transaction items

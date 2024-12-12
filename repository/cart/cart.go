@@ -21,11 +21,6 @@ func (c *CartRepository) AddProductToCart(userID uint, productID uint, quantity 
 		return fmt.Errorf("product not found")
 	}
 
-	if product.Stock < quantity {
-		tx.Rollback()
-		return fmt.Errorf("insufficient stock")
-	}
-
 	var cart models.Cart
 	if err := tx.FirstOrCreate(&cart, models.Cart{UserID: userID}).Error; err != nil {
 		tx.Rollback()
@@ -34,9 +29,21 @@ func (c *CartRepository) AddProductToCart(userID uint, productID uint, quantity 
 
 	var cartItem models.CartItem
 	if err := tx.First(&cartItem, "cart_id = ? AND product_id = ?", cart.ID, productID).Error; err == nil {
-		cartItem.Quantity += quantity
+		totalQuantity := cartItem.Quantity + quantity
+
+		if totalQuantity > product.Stock {
+			tx.Rollback()
+			return fmt.Errorf("insufficient stock: only %d items available", product.Stock)
+		}
+
+		cartItem.Quantity = totalQuantity
 		cartItem.Price = product.Price
 	} else {
+		if quantity > product.Stock {
+			tx.Rollback()
+			return fmt.Errorf("insufficient stock: only %d items available", product.Stock)
+		}
+
 		cartItem = models.CartItem{
 			CartID:    cart.ID,
 			ProductID: productID,
@@ -46,12 +53,6 @@ func (c *CartRepository) AddProductToCart(userID uint, productID uint, quantity 
 	}
 
 	if err := tx.Save(&cartItem).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	product.Stock -= quantity
-	if err := tx.Save(&product).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -124,19 +125,6 @@ func (r *CartRepository) RemoveCartItem(userID uint, productID *uint, quantity i
 			return err
 		}
 
-		for _, item := range cartItems {
-			var product models.Product
-			if err := tx.First(&product, "id = ?", item.ProductID).Error; err != nil {
-				tx.Rollback()
-				return fmt.Errorf("product not found for item ID: %d", item.ProductID)
-			}
-			product.Stock += item.Quantity
-			if err := tx.Save(&product).Error; err != nil {
-				tx.Rollback()
-				return err
-			}
-		}
-
 		if err := tx.Where("cart_id = ?", cart.ID).Delete(&models.CartItem{}).Error; err != nil {
 			tx.Rollback()
 			return err
@@ -149,7 +137,6 @@ func (r *CartRepository) RemoveCartItem(userID uint, productID *uint, quantity i
 		return nil
 	}
 
-	// Remove specific item if productID is provided
 	if productID != nil {
 		var cartItem models.CartItem
 		if err := tx.Where("cart_id = ? AND product_id = ?", cart.ID, *productID).First(&cartItem).Error; err != nil {
@@ -157,32 +144,15 @@ func (r *CartRepository) RemoveCartItem(userID uint, productID *uint, quantity i
 			return fmt.Errorf("item not found in cart")
 		}
 
-		var product models.Product
-		if err := tx.First(&product, "id = ?", cartItem.ProductID).Error; err != nil {
-			tx.Rollback()
-			return fmt.Errorf("product not found")
-		}
-
 		if quantity >= cartItem.Quantity {
-			product.Stock += cartItem.Quantity
-			if err := tx.Save(&product).Error; err != nil {
-				tx.Rollback()
-				return err
-			}
 			if err := tx.Delete(&cartItem).Error; err != nil {
 				tx.Rollback()
 				return err
 			}
 		} else {
 			cartItem.Quantity -= quantity
-			product.Stock += quantity
 
 			if err := tx.Save(&cartItem).Error; err != nil {
-				tx.Rollback()
-				return err
-			}
-
-			if err := tx.Save(&product).Error; err != nil {
 				tx.Rollback()
 				return err
 			}
