@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func initEnvironment() {
+func initEnvironment() string {
 	err := godotenv.Load()
 
 	if err != nil {
@@ -20,6 +20,8 @@ func initEnvironment() {
 
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.New().Info("Environment variables loaded")
+
+	return os.Getenv("ENVIRONMENT")
 }
 
 func initDatabase() *gorm.DB {

@@ -6,12 +6,14 @@ import (
 )
 
 func StartApp() {
-	initEnvironment()
+	environment := initEnvironment()
 	db = initDatabase()
 
-	models := initModels()
+	if environment == "development" {
+		models := initModels()
 
-	migrateModels(db, models)
+		migrateModels(db, models)
+	}
 
 	repository := config.InitRepository(db)
 	service := config.InitService(repository)

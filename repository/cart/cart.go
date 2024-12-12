@@ -8,22 +8,32 @@ import (
 )
 
 func (c *CartRepository) AddProductToCart(userID uint, productID uint, quantity int) error {
+	tx := c.db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
 	var product models.Product
-	if err := c.db.First(&product, "id = ?", productID).Error; err != nil {
+	if err := tx.First(&product, "id = ?", productID).Error; err != nil {
+		tx.Rollback()
 		return fmt.Errorf("product not found")
 	}
 
 	if product.Stock < quantity {
+		tx.Rollback()
 		return fmt.Errorf("insufficient stock")
 	}
 
 	var cart models.Cart
-	if err := c.db.FirstOrCreate(&cart, models.Cart{UserID: userID}).Error; err != nil {
+	if err := tx.FirstOrCreate(&cart, models.Cart{UserID: userID}).Error; err != nil {
+		tx.Rollback()
 		return err
 	}
 
 	var cartItem models.CartItem
-	if err := c.db.First(&cartItem, "cart_id = ? AND product_id = ?", cart.ID, productID).Error; err == nil {
+	if err := tx.First(&cartItem, "cart_id = ? AND product_id = ?", cart.ID, productID).Error; err == nil {
 		cartItem.Quantity += quantity
 		cartItem.Price = product.Price
 	} else {
@@ -35,23 +45,42 @@ func (c *CartRepository) AddProductToCart(userID uint, productID uint, quantity 
 		}
 	}
 
-	if err := c.db.Save(&cartItem).Error; err != nil {
+	if err := tx.Save(&cartItem).Error; err != nil {
+		tx.Rollback()
 		return err
 	}
 
 	product.Stock -= quantity
+	if err := tx.Save(&product).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
 
-	return c.db.Save(&product).Error
+	if err := tx.Commit().Error; err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	return nil
 }
 
 func (r *CartRepository) GetCart(userID uint) ([]entities.CartItemResponse, float64, error) {
 	var items []entities.CartItemResponse
 	var total float64
 
-	err := r.db.Table("cart_item").
+	var cartID uint
+	err := r.db.Table("cart").Select("id").Where("user_id = ?", userID).Pluck("id", &cartID).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if cartID == 0 {
+		return items, 0, nil
+	}
+
+	err = r.db.Table("cart_item").
 		Select("cart_item.product_id, product.name, cart_item.price, cart_item.quantity, (cart_item.price * cart_item.quantity) AS subtotal").
 		Joins("JOIN product ON cart_item.product_id = product.id").
-		Where("cart_item.cart_id = (SELECT id FROM cart WHERE user_id = ?)", userID).
+		Where("cart_item.cart_id = ?", cartID).
 		Scan(&items).Error
 
 	if err != nil {
@@ -59,73 +88,113 @@ func (r *CartRepository) GetCart(userID uint) ([]entities.CartItemResponse, floa
 	}
 
 	err = r.db.Table("cart_item").
-		Select("SUM(cart_item.price * cart_item.quantity)").
-		Joins("JOIN product ON cart_item.product_id = product.id").
-		Where("cart_item.cart_id = (SELECT id FROM cart WHERE user_id = ?)", userID).
+		Select("COALESCE(SUM(cart_item.price * cart_item.quantity), 0)").
+		Where("cart_item.cart_id = ?", cartID).
 		Row().Scan(&total)
 
 	if err != nil {
 		return nil, 0, err
 	}
 
+	if len(items) == 0 {
+		return []entities.CartItemResponse{}, 0, nil
+	}
+
 	return items, total, nil
 }
 
 func (r *CartRepository) RemoveCartItem(userID uint, productID *uint, quantity int, clearAll bool) error {
+	tx := r.db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
 	var cart models.Cart
-	if err := r.db.Where("user_id = ?", userID).First(&cart).Error; err != nil {
+	if err := tx.Where("user_id = ?", userID).First(&cart).Error; err != nil {
+		tx.Rollback()
 		return fmt.Errorf("cart not found")
 	}
 
 	if clearAll {
 		var cartItems []models.CartItem
-		if err := r.db.Where("cart_id = ?", cart.ID).Find(&cartItems).Error; err != nil {
+		if err := tx.Where("cart_id = ?", cart.ID).Find(&cartItems).Error; err != nil {
+			tx.Rollback()
 			return err
 		}
 
 		for _, item := range cartItems {
 			var product models.Product
-			if err := r.db.First(&product, "id = ?", item.ProductID).Error; err != nil {
+			if err := tx.First(&product, "id = ?", item.ProductID).Error; err != nil {
+				tx.Rollback()
 				return fmt.Errorf("product not found for item ID: %d", item.ProductID)
 			}
 			product.Stock += item.Quantity
-			if err := r.db.Save(&product).Error; err != nil {
+			if err := tx.Save(&product).Error; err != nil {
+				tx.Rollback()
 				return err
 			}
 		}
 
-		return r.db.Where("cart_id = ?", cart.ID).Delete(&models.CartItem{}).Error
+		if err := tx.Where("cart_id = ?", cart.ID).Delete(&models.CartItem{}).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		if err := tx.Commit().Error; err != nil {
+			return fmt.Errorf("failed to commit transaction: %v", err)
+		}
+
+		return nil
 	}
 
 	// Remove specific item if productID is provided
 	if productID != nil {
 		var cartItem models.CartItem
-		if err := r.db.Where("cart_id = ? AND product_id = ?", cart.ID, *productID).First(&cartItem).Error; err != nil {
+		if err := tx.Where("cart_id = ? AND product_id = ?", cart.ID, *productID).First(&cartItem).Error; err != nil {
+			tx.Rollback()
 			return fmt.Errorf("item not found in cart")
 		}
 
 		var product models.Product
-		if err := r.db.First(&product, "id = ?", cartItem.ProductID).Error; err != nil {
+		if err := tx.First(&product, "id = ?", cartItem.ProductID).Error; err != nil {
+			tx.Rollback()
 			return fmt.Errorf("product not found")
 		}
 
 		if quantity >= cartItem.Quantity {
 			product.Stock += cartItem.Quantity
-			if err := r.db.Save(&product).Error; err != nil {
+			if err := tx.Save(&product).Error; err != nil {
+				tx.Rollback()
 				return err
 			}
-			return r.db.Delete(&cartItem).Error
+			if err := tx.Delete(&cartItem).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+		} else {
+			cartItem.Quantity -= quantity
+			product.Stock += quantity
+
+			if err := tx.Save(&cartItem).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+
+			if err := tx.Save(&product).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
 		}
 
-		cartItem.Quantity -= quantity
-		product.Stock += quantity
-
-		if err := r.db.Save(&cartItem).Error; err != nil {
-			return err
+		if err := tx.Commit().Error; err != nil {
+			return fmt.Errorf("failed to commit transaction: %v", err)
 		}
 
-		return r.db.Save(&product).Error
+		return nil
 	}
 
+	tx.Rollback()
 	return fmt.Errorf("no product ID provided and clearAll is false")
 }
