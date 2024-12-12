@@ -25,23 +25,22 @@ func initEnvironment() string {
 }
 
 func initDatabase() *gorm.DB {
-	host := os.Getenv("DB_HOST")
-	port := os.Getenv("DB_PORT")
-	user := os.Getenv("DB_USER")
-	password := os.Getenv("DB_PASSWORD")
-	dbname := os.Getenv("DB_NAME")
+	pgBouncerURL := os.Getenv("PGBOUNCER_URL")
+	if pgBouncerURL == "" {
+		panic("PGBOUNCER_URL environment variable is not set")
+	}
 
-	dsn := "host=" + host + " port=" + port + " user=" + user + " password=" + password + " dbname=" + dbname + " sslmode=disable TimeZone=Asia/Shanghai"
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-
+	db, err := gorm.Open(postgres.Open(pgBouncerURL), &gorm.Config{
+		PrepareStmt: true,
+	})
 	if err != nil {
 		panic(err)
 	}
 
+	session := db.Session(&gorm.Session{PrepareStmt: true})
 	logrus.New().Info("Database connected")
 
-	return db
+	return session
 }
 
 func getTableName(db *gorm.DB, model interface{}) string {
