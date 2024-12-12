@@ -318,3 +318,4 @@ The product API utilizes Valkey for caching frequently accessed product data.
 
 ## Deployment
 
+This API is deployed and can be accessed [here](https://literary-suzette-eddoog-03040843.koyeb.app/).
