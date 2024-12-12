@@ -111,6 +111,7 @@ func (r *TransactionRepository) Checkout(ctx *fiber.Ctx, userID uint) error {
 
 		// Invalidate cache
 		r.CacheService.Delete(ctx, fmt.Sprintf("product:%d", item.ProductID))
+		r.CacheService.Delete(ctx, "products:index:*")
 	}
 
 	if err := tx.Where("cart_id = ?", cart.ID).Delete(&models.CartItem{}).Error; err != nil {
@@ -184,6 +185,7 @@ func (r *TransactionRepository) CancelTransaction(ctx *fiber.Ctx, txID uint, use
 		}
 
 		r.CacheService.Delete(ctx, fmt.Sprintf("product:%d", item.ProductID))
+		r.CacheService.Delete(ctx, "products:index:*")
 	}
 
 	// Soft delete transaction items
